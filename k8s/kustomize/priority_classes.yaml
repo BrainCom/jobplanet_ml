@@ -1,0 +1,39 @@
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: very-high-priority
+value: 1000000
+globalDefault: false
+description: "django pods only"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: high-priority
+value: 100000
+globalDefault: false
+description: "redis(broker/cache)"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: middle-priority
+value: 10000
+globalDefault: false
+description: "sentinel to monitor redis cluster"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: low-priority
+value: 1000
+globalDefault: false
+description: "celery beat(scheduled worker)"
+---
+apiVersion: scheduling.k8s.io/v1
+kind: PriorityClass
+metadata:
+  name: very-low-priority
+value: 100
+globalDefault: false
+description: "celery worker/flower"

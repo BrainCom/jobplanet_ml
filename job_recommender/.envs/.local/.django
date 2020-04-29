@@ -1,0 +1,37 @@
+# General
+# ------------------------------------------------------------------------------
+USE_DOCKER=yes
+IPYTHONDIR=/app/.ipython
+
+# Email
+# ------------------------------------------------------------------------------
+DJANGO_DEFAULT_FROM_EMAIL=jk.jung@braincommerce.com
+SENDGRID_API_KEY=WRITE_SECRET_HERE
+SENDGRID_GENERATE_MESSAGE_ID=True
+SENDGRID_MERGE_FIELD_FORMAT=None
+
+
+# GCP
+# ------------------------------------------------------------------------------
+DJANGO_GCP_STORAGE_BUCKET_NAME=job_recommender_kr
+DJANGO_GCP_STORAGE_CREDENTIALS_PATH=secrets/gcp/storage-credentials.json
+
+# Security
+# ------------------------------------------------------------------------------
+DJANGO_SECURE_SSL_REDIRECT=True
+DJANGO_SECURE_HSTS_INCLUDE_SUBDOMAINS=True
+DJANGO_SECURE_HSTS_PRELOAD=True
+DJANGO_SECURE_CONTENT_TYPE_NOSNIFF=True
+DJANGO_SESSION_COOKIE_SECURE=True
+DJANGO_CSRF_COOKIE_SECURE=True
+
+# Redis
+# ------------------------------------------------------------------------------
+REDIS_URL=redis://redis:6379/0
+
+# Celery
+# ------------------------------------------------------------------------------
+
+# Flower
+CELERY_FLOWER_USER=WRITE_SECRET_HERE
+CELERY_FLOWER_PASSWORD=WRITE_SECRET_HERE

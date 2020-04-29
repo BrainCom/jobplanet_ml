@@ -1,0 +1,87 @@
+apiVersion: v1
+data:
+  init.sh: "#!/bin/bash\ncp /sentinel-config/sentinel.conf /shared-config/sentinel.conf\nchmod
+    777 /shared-config/sentinel.conf\nwhile ! ping -c 1 redis-0.redis; do\n\techo
+    'Waiting for server'\n\tsleep 1\ndone"
+  sentinel.conf: |-
+    bind 0.0.0.0
+    port 26379
+    sentinel monitor cluster1 redis-0.redis 6379 2
+    sentinel parallel-syncs cluster1 1
+    sentinel down-after-milliseconds cluster1 10000
+    sentinel failover-timeout cluster1 20000
+kind: ConfigMap
+metadata:
+  labels:
+    app: sentinel
+  name: sentinel-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: sentinel
+  name: sentinel
+spec:
+  clusterIP: None
+  ports:
+  - name: sentinel
+    port: 26379
+  selector:
+    app: sentinel
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: sentinel
+  name: sentinel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sentinel
+  serviceName: sentinel
+  template:
+    metadata:
+      labels:
+        app: sentinel
+    spec:
+      containers:
+      - command:
+        - redis-sentinel
+        - /sentinel-config/sentinel.conf
+        image: redis:6.0.1-alpine
+        imagePullPolicy: IfNotPresent
+        name: sentinel
+        ports:
+        - containerPort: 26379
+          name: sentinel
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /sentinel-config
+          name: shared
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - source /sentinel-config/init.sh
+        image: redis:6.0.1-alpine
+        imagePullPolicy: IfNotPresent
+        name: init-sentinel
+        volumeMounts:
+        - mountPath: /sentinel-config
+          name: config
+        - mountPath: /shared-config
+          name: shared
+      priorityClassName: middle-priority
+      volumes:
+      - emptyDir: {}
+        name: shared
+      - configMap:
+          defaultMode: 511
+          name: sentinel-config
+        name: config

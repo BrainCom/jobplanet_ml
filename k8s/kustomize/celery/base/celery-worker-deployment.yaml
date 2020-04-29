@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  labels:
+    app: celery-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery-worker
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: celery-worker
+    spec:
+      priorityClassName: very-low-priority
+      containers:
+      - name: celery-worker
+        image: job_recommender
+        imagePullPolicy: Always
+        # imagePullPolicy: Never
+        command: ['bash', '-c', '/config/start-worker.sh']
+        envFrom:
+        - configMapRef:
+            name: deployment-params
+        - secretRef:
+            name: deployment-secrets
+        volumeMounts:
+          - name: config
+            mountPath: /config
+          - name: mysql-sshkey
+            mountPath: /mysql-sshkey
+          - name: gcp-credentials
+            mountPath: /secrets/gcp
+            readOnly: true
+
+      - image: gce-proxy
+        name: cloudsql-proxy
+        command: ["/cloud_sql_proxy",
+                  "-instances=$(GCP_PRJECT_ID):$(GCP_REGION):$(GCP_CLOUDSQL_INSTANCE)=tcp:5432",
+                  "-credential_file=/secrets/cloudsql/cloudsql-credentials.json"]
+        volumeMounts:
+          - name: gcp-credentials
+            mountPath: /secrets/cloudsql
+            readOnly: true
+          - name: ssl-certs
+            mountPath: /etc/ssl/certs
+          - name: cloudsql
+            mountPath: /cloudsql
+      volumes:
+        - name: config
+          configMap:
+            name: celery-config
+            defaultMode: 0777
+        - name: mysql-sshkey
+          secret:
+            secretName: mysql-sshkey
+        - name: gcp-credentials
+          secret:
+            secretName: gcp-credentials
+        - name: ssl-certs
+          hostPath:
+            path: /etc/ssl/certs
+        - name: cloudsql
+          emptyDir:

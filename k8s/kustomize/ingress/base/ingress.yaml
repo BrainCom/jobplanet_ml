@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: job-recommender
+  annotations:
+    # kubernetes.io/ingress.global-static-ip-name: 35.186.255.82
+    # networking.gke.io/managed-certificates: job-recommender-cert
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Forwarded-Proto $scheme;
+    cert-manager.io/issuer: letsencrypt-$(ENVIRONMENT)
+spec:
+  tls:
+    - hosts:
+      - $(DOMAIN)
+      secretName: acme-crt-secret-$(ENVIRONMENT)
+  rules:
+    - host: $(DOMAIN)
+      http:
+        paths:
+          - path: /flower(/|$)(.*)
+            backend:
+              serviceName: celery-flower
+              servicePort: 5555
+          - path: /
+            backend:
+              serviceName: django
+              servicePort: 80

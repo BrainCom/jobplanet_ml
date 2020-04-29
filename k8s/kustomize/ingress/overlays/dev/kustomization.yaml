@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+bases:
+- ../../base
+configMapGenerator:
+- name: ingress-params
+  envs: [params.env]
+generatorOptions:
+  disableNameSuffixHash: true
+vars:
+- name: ADMIN_EMAIL
+  objref:
+    kind: ConfigMap
+    name: ingress-params
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.ADMIN_EMAIL
+- name: PROJECT_ID
+  objref:
+    kind: ConfigMap
+    name: ingress-params
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.PROJECT_ID
+- name: DOMAIN
+  objref:
+    kind: ConfigMap
+    name: ingress-params
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.DOMAIN
+- name: ENVIRONMENT
+  objref:
+    kind: ConfigMap
+    name: ingress-params
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.ENVIRONMENT
+- name: ISSUER_SERVER
+  objref:
+    kind: ConfigMap
+    name: ingress-params
+    apiVersion: v1
+  fieldref:
+    fieldpath: data.ISSUER_SERVER
+configurations:
+- params.yaml

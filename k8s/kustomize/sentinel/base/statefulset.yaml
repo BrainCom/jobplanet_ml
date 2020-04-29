@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: sentinel
+spec:
+  serviceName: sentinel
+  replicas: 1
+  template:
+    spec:
+      priorityClassName: middle-priority
+      initContainers:
+      - name: init-sentinel
+        image: redis:6.0.1-alpine
+        imagePullPolicy: IfNotPresent
+        command: [sh, -c, source /sentinel-config/init.sh]
+        volumeMounts:
+          - name: config
+            mountPath: /sentinel-config
+          - name: shared
+            mountPath: /shared-config
+      containers:
+      - command: [redis-sentinel, /sentinel-config/sentinel.conf]
+        image: redis:6.0.1-alpine
+        imagePullPolicy: IfNotPresent
+        name: sentinel
+        ports:
+        - name: sentinel
+          containerPort: 26379
+        volumeMounts:
+          - name: shared
+            mountPath: /sentinel-config
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      volumes:
+      - name: shared
+        emptyDir: {}
+      - name: config
+        configMap:
+          defaultMode: 0777
+          name: sentinel-config

@@ -1,0 +1,78 @@
+apiVersion: v1
+data:
+  ADMIN_EMAIL: jk.jung@braincommerce.com
+  DOMAIN: job-recommender.johnjung.shop
+  ENVIRONMENT: prod
+  ISSUER_SERVER: https://acme-v02.api.letsencrypt.org/directory
+  PROJECT_ID: banded-totality-247701
+kind: ConfigMap
+metadata:
+  name: ingress-params
+---
+apiVersion: v1
+data:
+  dns01-solver-credentials.json: ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiYmFuZGVkLXRvdGFsaXR5LTI0NzcwMSIsCiAgInByaXZhdGVfa2V5X2lkIjogImFiNTJhNGY2ZDgzMTBiZmY4M2MzY2U4YTJkNzNhYmE5NzRiYzAwNGUiLAogICJwcml2YXRlX2tleSI6ICItLS0tLUJFR0lOIFBSSVZBVEUgS0VZLS0tLS1cbk1JSUV2QUlCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktZd2dnU2lBZ0VBQW9JQkFRRERqR2kyS1lBM0F0cHlcbnA3Q2ZQSlR3ZXVIYTNkMUN0WnBtZXY2aUd3WTYzcXBZaE9TMWJDeDBXRktwOXFxOW1YQXRMS2dBRHpnRXE0OGZcbndKZU9QWUNjSFUvenhlL3I1d2lZLy92ZGlvN0lpZldqRXB0eTFyazZidUZTZFowbEV4azRHSk9Ib1M5cXZOL29cblB1OTRNUDlSWlNCeHlKbU9sYmlyM1ZRVFluWXR5L09VTUhrbWZNN1ZRSlUxOFVJR096a1JuZnA3dW9nT0MwRy9cbmNKajZBWHlDNmZTazNMamhwdnAyZ1ppaUdYWWYxbUluNktnbC84SGpBazBWWjd6Qy9Ua3R1cEJiVWJkRGJNSGNcbmE4OEE3Z1BIK0dUdzR4TXR2NzBhMXpmVHJ0R25uTUd6ZUkwUlpvdnAxTnhMbnVjNzBad2Nma0xML011ME8rSTJcbmw3M3RkUGo3QWdNQkFBRUNnZ0VBTUdOWk1lSlpHTU82L0c0a1ZYTHZSQWFVUnMxcHgrMGFOTXV3b0xwaE0wWVFcbkR2RnJpcjBtenU5Z0hUQ3RsVmNYbkFZVjJGWHJ2YlFhS1hoRnlHdk5uRlBnaWVqcjhvcnI1TGhMUWNuY2hTRW1cblNHRDlXRkJyNjFxdXBQSDNuY241RHBsK1FDeVJpQzhPbFBDbDN5NzRydEtBVWNlYXY5NnFvTlNXem1rcDV6REdcbngwYmdaSExhYUxUODVJWnR2ZHJ4djhHdE5QSmFpZE13QUhTdTlwcmkvcDlFQ1R5MkRxSU1vUmI4NmNNMXVXMzhcblBTZHB2WDJGWGtoWXB3RmkzRmtmMnB0Mk81WWZEbDFuZVBZZ1lwZVpob0J1THpOVFB1RmRvVXlaRE1BNWZ0MlRcbmVLYkM4TnJnU3ZNbTFVTDZRVVV3TEljQVd1Z0RlMC94alJqU1lzVkZxUUtCZ1FEcm83eEN6NkoyUXY2NTh3aXVcbjAzYzZGaWY5cm84d0NiTXNqV1E4Mk5lMGRlMTV4Z0lra2N2UTM5SFpod2lmeGFSVmFHbllmNTVrOXBrdTVsWFhcbmRoeHQ3cS9SNW5yMis0cEpFenByK1lJSWZHM3ROeHk3ZmljNitoVEpja0E4OE82UmJjdEtxTzNyQVdXbURYRkFcbkp0MG1xbzRGYjBCZUR3d1hvT0tVVFRKemR3S0JnUURVY2Q5TEU2b0xHZDRnb2Q4VlhVZ3hoSVh1alg3MFAwci9cbnY0Sy9YdmVtMkUzNDRhYmtReGx6RWQ2MW8xdjhmeXV4Zk00dk1BK1VGU0NBOTJ5S1hLWUJDSGNSd2dLMFp2R3RcbkhFUEJrMERxY3k0VDVzVzRSdENtbFRscmVIR0hhNklUVVRadDk2c0R5eWtNQmx6RDgwclpGeFo1bWt1VnBEK2tcbmZpWXlwVzFmblFLQmdIajJ6YzhTWGRrTjNVdkJ5a1JOQkJpS2hTOENMRGxCMFh2ZWZZV0szM2loVFM1RkNwYVJcblRhckZLeW5hMnYrQjZ6RjQ3MVVYZGsxb0ZnendhMEszUERMbTQ5VUIxei93c3ZWK2JIQS9YcFJTbysreGFndUpcbjRFT3pXM1pxTXpYVmpQS1ZCVlluVUROaXZUYTRFZG9YMlZGZkhwY0ZuR3BzbVEyTUpxUncyS1JUQW9HQUVKU3Vcbm85SnVGQjI1dTN4R3lBa1d5RjZhZ1dyanZMWnY2UlFPWlZkSkp1bDg5RzdRTXNLVjZ1ZzdKSndTWXR1ZUVtVTJcblJuS08xTFR0YTROa0lreG0zRy9IczBnY0krNWc4R3pqVU9sb1NLUWl0WVR1YTVxRFVHMFhKUzhxVlRKdVhPbWFcbndPeHltWUl5dXZDSUx2Yi9JWUJ1emFEZ1ExYWxiUFkzanY1Z1VmVUNnWUJZVkpnbk1GdmV4L01tUGZNWm5lQTNcbm82M1Q4bzVZWjVSUUUrdkJzODQrK1BXU0FleTNuajFUbTE5VHNnTHFucVpvaUt1T3BseVJkV1FLRmtwWVJpQ3dcblkva0YwU25xQ1djSUFhSzZHRldQL0c2QjBjYzUxWXVWWVBkT0RpOUNnNDVxRzlNSXA3UDlBNmw1QzQ0cXU0MjRcbkk3S0dKZVNRMEdTZ3BoblhIYXZLaEE9PVxuLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLVxuIiwKICAiY2xpZW50X2VtYWlsIjogImRuczAxLXNvbHZlckBiYW5kZWQtdG90YWxpdHktMjQ3NzAxLmlhbS5nc2VydmljZWFjY291bnQuY29tIiwKICAiY2xpZW50X2lkIjogIjEwNzk5OTkzNTAwMzcxODk1NDIzNCIsCiAgImF1dGhfdXJpIjogImh0dHBzOi8vYWNjb3VudHMuZ29vZ2xlLmNvbS9vL29hdXRoMi9hdXRoIiwKICAidG9rZW5fdXJpIjogImh0dHBzOi8vb2F1dGgyLmdvb2dsZWFwaXMuY29tL3Rva2VuIiwKICAiYXV0aF9wcm92aWRlcl94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL29hdXRoMi92MS9jZXJ0cyIsCiAgImNsaWVudF94NTA5X2NlcnRfdXJsIjogImh0dHBzOi8vd3d3Lmdvb2dsZWFwaXMuY29tL3JvYm90L3YxL21ldGFkYXRhL3g1MDkvZG5zMDEtc29sdmVyJTQwYmFuZGVkLXRvdGFsaXR5LTI0NzcwMS5pYW0uZ3NlcnZpY2VhY2NvdW50LmNvbSIKfQo=
+kind: Secret
+metadata:
+  name: gcp-ingress-credentials
+type: Opaque
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: acme-crt-prod
+spec:
+  dnsNames:
+  - job-recommender.johnjung.shop
+  - www.job-recommender.johnjung.shop
+  issuerRef:
+    name: letsencrypt-prod
+  secretName: acme-crt-secret-prod
+---
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: jk.jung@braincommerce.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+    - dns01:
+        clouddns:
+          project: banded-totality-247701
+          serviceAccountSecretRef:
+            key: dns01-solver-credentials.json
+            name: gcp-ingress-credentials
+      selector: {}
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  annotations:
+    cert-manager.io/issuer: letsencrypt-prod
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header X-Forwarded-Proto $scheme;
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+  name: job-recommender
+spec:
+  rules:
+  - host: job-recommender.johnjung.shop
+    http:
+      paths:
+      - backend:
+          serviceName: celery-flower
+          servicePort: 5555
+        path: /flower(/|$)(.*)
+      - backend:
+          serviceName: django
+          servicePort: 80
+        path: /
+  tls:
+  - hosts:
+    - job-recommender.johnjung.shop
+    secretName: acme-crt-secret-prod

@@ -1,0 +1,19 @@
+varReference:
+- path: metadata/name
+  kind: Issuer
+- path: spec/acme/email
+  kind: Issuer
+- path: spec/acme/server
+  kind: Issuer
+- path: spec/acme/privateKeySecretRef/name
+  kind: Issuer
+- path: spec/acme/solvers/dns01/clouddns/project
+  kind: Issuer
+- path: metadata/name
+  kind: Certificate
+- path: spec/issuerRef/name
+  kind: Certificate
+- path: spec/secretName
+  kind: Certificate
+- path: spec/dnsNames
+  kind: Certificate

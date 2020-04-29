@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: sentinel
+spec:
+  ports:
+    - port: 26379
+      name: sentinel
+  clusterIP: None
+  selector:
+    app: sentinel

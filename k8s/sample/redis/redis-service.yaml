@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  ports:
+    - port: 6379
+      name: redis
+  clusterIP: None
+  selector:
+    app: redis
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: sentinel
+# spec:
+#   ports:
+#     - port: 26379
+#       name: sentinel
+#   clusterIP: None
+#   selector:
+#     app: sentinel
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-read
+  labels:
+    app: redis-read
+spec:
+  ports:
+  - port: 6379
+    targetPort: redis
+  selector:
+    app: redis

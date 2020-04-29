@@ -1,0 +1,306 @@
+apiVersion: v1
+data:
+  DJANGO_ACCOUNT_ALLOW_REGISTRATION: "True"
+  DJANGO_ALLOWED_HOSTS: 192.168.64.6,job_recommender.endpoints.banded-totality-247701.cloud.goog
+  DJANGO_DEBUG: "True"
+  DJANGO_DEFAULT_FROM_EMAIL: jk.jung@braincommerce.com
+  DJANGO_SECURE_SSL_REDIRECT: "False"
+  DJANGO_SETTINGS_MODULE: config.settings.production
+  SENDGRID_GENERATE_MESSAGE_ID: "True"
+  SENDGRID_MERGE_FIELD_FORMAT: None
+  WEB_CONCURRENCY: "4"
+kind: ConfigMap
+metadata:
+  name: deployment-params
+---
+apiVersion: v1
+data:
+  init.sh: |
+    #!/bin/bash
+    set -o errexit
+    set -o pipefail
+    set -o nounset
+    export CELERY_BROKER_URL="${REDIS_URL}"
+    if [ -z "${POSTGRES_USER}" ]; then
+        base_postgres_image_default_user='postgres'
+        export POSTGRES_USER="${base_postgres_image_default_user}"
+    fi
+    export DATABASE_URL="postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}"
+    if [ -z "${MYSQL_USER}" ]; then
+        base_mysql_image_default_user='root'
+        export MYSQL_USER="${base_mysql_image_default_user}"
+    fi
+    export JOBPLANET_DATABASE_URL="mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}:${MYSQL_PORT}/${MYSQL_DB}"
+    postgres_ready() {
+    python << END
+    import sys
+    import psycopg2
+    try:
+        psycopg2.connect(
+            dbname="${POSTGRES_DB}",
+            user="${POSTGRES_USER}",
+            password="${POSTGRES_PASSWORD}",
+            host="${POSTGRES_HOST}",
+            port="${POSTGRES_PORT}",
+        )
+    except psycopg2.OperationalError:
+        sys.exit(-1)
+    sys.exit(0)
+    END
+    }
+    mysql_ready() {
+    python << END
+    import sys
+    import MySQLdb
+    try:
+        MySQLdb.connect(
+            db="${MYSQL_DB}",
+            user="${MYSQL_USER}",
+            passwd="${MYSQL_PASSWORD}",
+            host="${MYSQL_HOST}",
+            port=int("${MYSQL_PORT}"),
+        )
+    except MySQLdb.OperationalError:
+      sys.exit(-1)
+    sys.exit(0)
+    END
+    }
+    # until postgres_ready; do
+    #   >&2 echo 'Waiting for PostgreSQL to become available...'
+    #   sleep 1
+    # done
+    # >&2 echo 'PostgreSQL is available'
+    mkdir -p ~/.ssh
+    cp /tmp/mysql-sshkey/mysql-sshkey ~/.ssh/id_rsa
+    cp /tmp/mysql-sshkey/mysql-sshkey.pub ~/.ssh/id_rsa.pub
+    chmod 700 ~/.ssh
+    chmod 600 ~/.ssh/id_rsa
+    chmod 644 ~/.ssh/id_rsa.pub
+    chmod 644 ~/.ssh/authorized_keys
+    chmod 644 ~/.ssh/known_hosts
+    if [ -n "${MYSQL_SSH_HOST}" ]; then
+      ssh -L $MYSQL_PORT:$MYSQL_HOST:$MYSQL_PORT -p $MYSQL_SSH_PORT $MYSQL_SSH_USER@$MYSQL_SSH_HOST
+    fi
+    until mysql_ready; do
+      >&2 echo 'Waiting for MySQL to become available...'
+      sleep 1
+    done
+    >&2 echo 'MySQL is available'
+    exec "$@"
+  start.sh: |-
+    #!/bin/bash
+    set -o errexit
+    set -o pipefail
+    set -o nounset
+    python manage.py migrate
+    python manage.py collectstatic --noinput
+    /usr/local/bin/gunicorn config.wsgi --bind 0.0.0.0:5000 --chdir=/app
+kind: ConfigMap
+metadata:
+  labels:
+    app: django
+  name: django-config
+---
+apiVersion: v1
+data:
+  CELERY_BROKER_MASTER_NAME: Y2x1c3RlcjE=
+  CELERY_BROKER_URL: c2VudGluZWw6Ly9zZW50aW5lbC0wLnNlbnRpbmVsOjI2Mzc5O3NlbnRpbmVsOi8vc2VudGluZWwtMS5zZW50aW5lbDoyNjM3OTtzZW50aW5lbDovL3NlbnRpbmVsLTIuc2VudGluZWw6MjYzNzk=
+  CELERY_FLOWER_PASSWORD: TnFCRUZibVI5dlMyZHRUbXJNbFhidVlVUW56QzRLWWhzSmdVNm5Ob0xxR2xUR2hxV3g2VTdJTUpReEVUOG1IdA==
+  CELERY_FLOWER_USER: cW9Ha2hXSnN4RlNtVlVvZUFGaVd0emtIYnFvbWlGZkY=
+  DJANGO_ADMIN_URL: YWRtaW4=
+  DJANGO_GCP_STORAGE_BUCKET_NAME: am9iX3JlY29tbWVuZGVyX2ty
+  DJANGO_SECRET_KEY: QjJUNjZUZ2IzdUxpWkhwWWk5a3N5ekZoZHVMVG1ZN1Zid3ZMY256ak1ud3E5ZzM0VXpXeThtQ3kyaXNMU0NoRA==
+  GCP_CLOUDSQL_INSTANCE: am9iLXJlY29tbWVuZGVyMQ==
+  GCP_PRJECT_ID: YmFuZGVkLXRvdGFsaXR5LTI0NzcwMQ==
+  GCP_REGION: YXNpYS1ub3J0aGVhc3Qz
+  GCP_ZONE: YXNpYS1ub3J0aGVhc3QzLWE=
+  MYSQL_DB: amtfZGV2
+  MYSQL_HOST: bWluaWt1YmUuaG9zdA==
+  MYSQL_PASSWORD: dGVzdA==
+  MYSQL_PORT: MzMwNg==
+  MYSQL_USER: dGVzdA==
+  POSTGRES_DB: am9iX3JlY29tbWVuZGVy
+  POSTGRES_HOST: MTI3LjAuMC4x
+  POSTGRES_PASSWORD: cG9zdGdyZXM=
+  POSTGRES_PORT: NTQzMg==
+  POSTGRES_USER: cG9zdGdyZXM=
+  REDIS_MASTER_URL: cmVkaXM6Ly9yZWRpcy0wLnJlZGlzOjYzNzk=
+  REDIS_URL: cmVkaXM6Ly9yZWRpcy0wLnJlZGlzOjYzNzkscmVkaXM6Ly9yZWRpcy1yZWFkOjYzNzk=
+  SENDGRID_API_KEY: U0cua3lBRHFVMlVSMHVrNElHN3R2bktSQS5oWGdncUNUaE91MnFya2NUS2Q0TzlIaHEzcGtRb0RkaUhQUTl0R1k5Ql9F
+kind: Secret
+metadata:
+  name: deployment-secrets
+type: Opaque
+---
+apiVersion: v1
+data:
+  cloudsql-credentials.json: ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiYmFuZGVkLXRvdGFsaXR5LTI0NzcwMSIsCiAgInByaXZhdGVfa2V5X2lkIjogIjdkNTU4YTdmNWRlZGVjZDQwMGM3NjkzNjI2ZWRkMDc5ZjNkZjYyMmYiLAogICJwcml2YXRlX2tleSI6ICItLS0tLUJFR0lOIFBSSVZBVEUgS0VZLS0tLS1cbk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRQzd0NmhRd0V3d2VBd1lcbitPd0JjWlRWejgvOHdGU2xqQkJhandUNWlQekRoUGlQOERXbHhDTUkrcTh3cm9SY2llYmtScVAwVnpYNkszb2NcblBTWWJPN2ZVQ2xHTitVTmo3MzlheFZ5SFZubU1mdy90MzNnSlNEaUNSWVRzMEdLc0lBK3B4QUNzOHAvZmhRSUFcbjlSaGVBTzlLMDZHUmhITHN1MjQ1NUxpL2RiczBjb2ZDNUFSVWZYcmN1bVZneEpwS1ZmR3pxZGdWcVZMQWxtT3Zcbk1ySldNT0swRjZVTHNab1pGMkV0bVZPT2E2NkpTamhIUXlZTklTV0N5RHhSdExlN2RKV3FEdmZiUmo4Y0pwV21cbmNYdnVIRTBhcUtGMVFHak42YloxKy9ReVZPMkRVRWxzeURST2VwaUVpL1JHbm1NOG9jSjJobGpPSnI4c0R6Sk5cbi84VUFaK0w1QWdNQkFBRUNnZ0VBSDRJNTRlZ05RZHQ4cUZwci91Z0tSQU5nVlh3UkdVS1Q0aWQ4ZmNnMUtUcHlcbklITUJCa1NRWHVyNUtoSTVESEZuVEt6Z3kxd3lKcjVTZmxmelJBSDNuc05tb2c2VGRieFhJNnphRmF0NXRwQURcblkvbXRJOTI0QW9IWnlJaEg3NzFuODZaL09JaDNObVVVaTRXWVkvc0RMNHVyWklvWFlrNHB0OVVBLzc0cXdLZ29cbmtZalI5T0xOcHNlQVRmQzJZaFRXRW9pV1FLMXZPcyttYUtjamozaVdqNWFLR29pelZ2NkxUd0taTmo4bTIyWGlcbldYMG03YzVqbnR1akFMY2JQdGZTZi9jVWJCME44OEZrT3psdWUzcEU0em45OERRZkgrM2RKQXpEQkhTZUduRHBcbkpZeHJ2ZkJuNGZQTXdTOTQ2SmdycCtIYi85N0dvSGk2aUpYVzNqbXdLUUtCZ1FENTErZjVMS0orcExnbkU4R3JcbnlBNVVadHUrR2JCM0M3NmNGL3FjaWJpV1JrdVVSYmFhL0lEYVJsaUdyc0JaR1ZSdHZQR1pkb2xUME5uNXRtN09cbno4MnV6R0FNbGxpeVo4aVl1VHJ2QkFqcm9ibFJHbitMRTRNcjgxWEdHZGd3UU1iSGNYM0NhZkVwaFVlbkdmUFRcbnNXNXBPeDZoNGJzakQ0Q2NOM25peXJUVWJRS0JnUURBVjljaWlmWjA0V1pTTy8vZEtpZ044eGJPb3RaV1BOaG5cbklsdjZDM0NKWllXUFBkV0lObEZKWlNHNk9aNFJCSGxyN3FwNzJHTGpzSjhhMXJUVnpkUG11RG5GcFdhelRoZC9cbm1DYStnaVowZkVid2hHaUU3Qmp6b1dlb3ZuSXZLV2RGNkNBQWt4Z2R5RVdIc1FISDN3dnJwL3FQd0lBVHlyK3dcbmUzMTEydms1UFFLQmdRQ0tha2NtRU1obGlUUk0wZkUyRGp1Q0h3b1dvM3pVTnpsK21QcEt4ekh3Ynpsb0I4ZEdcbnppVkV5RHc3UVkxbXoxV3JCa2FEVXR4NkJ2YjhGVW9HWWJIOTZWUTlKUDQydUxDMWk4bE9xZG1YVVoydGhSU3NcbkpEOURsaWdxL0I1OWZTV2pVUWp2TUdwZkttdXI5QURWZ3pNOE1YaWpEci95aUtBajY4Z25FVTVsY1FLQmdRQ0pcbi9mc2drbTQ0eUlVS05uV0lqSGdVR2ZTZzV2NXkvRkFkSGU5eTRzWW9MS2UzYnB0RmtBS2RiMnJWR2dVbkhGaW9cbmNKL3JIZ0ZFYlRDWXByVXlOdXJ4dWZYb3NKT1B6RlRiZTZOQVJrdWtnb3k2ZmFRbXlPUFYxbFJ5SWIvMXlmU0hcbm1OTnMxaHNWTXR0L1VDU0E2cXE0dE5qMFRSMFdGZjJVZGVRNnE1RGwyUUtCZ0ViVWRwY2lhWEJ3Y2tEbjFJZXRcbllBcEZHVEdMTThHR3N0OStCTnRvRTZlOGRwUHU2aVJuK2swejhueGdqQUcwMkxjTmI2T1pNQVVOTi9lOWhtVndcblpvRkptLzNXOENtUkZKY3Vwbm4yQXVjUC9GZ29sRG1GcElYcDJEc0plV0gxc2NDZGw3WWJqbTdWSUZ1Ly9TQVlcblREWDJhUTRRK3Fxb1piRFI3TUh2RGhOWVxuLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLVxuIiwKICAiY2xpZW50X2VtYWlsIjogImpvYi1yZWNvbW1lbmRlci1jbG91ZHByb3h5QGJhbmRlZC10b3RhbGl0eS0yNDc3MDEuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLAogICJjbGllbnRfaWQiOiAiMTEwMzQwNzk0ODM0MzIxNzMxNzE0IiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9qb2ItcmVjb21tZW5kZXItY2xvdWRwcm94eSU0MGJhbmRlZC10b3RhbGl0eS0yNDc3MDEuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iCn0K
+  storage-credentials.json: ewogICJ0eXBlIjogInNlcnZpY2VfYWNjb3VudCIsCiAgInByb2plY3RfaWQiOiAiYmFuZGVkLXRvdGFsaXR5LTI0NzcwMSIsCiAgInByaXZhdGVfa2V5X2lkIjogIjM5N2VlYzU4ZWYzZjBkZGRkNTA2Y2E2NDg4ZDhiZGY0MmQyODMyOWUiLAogICJwcml2YXRlX2tleSI6ICItLS0tLUJFR0lOIFBSSVZBVEUgS0VZLS0tLS1cbk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRQzdqUzM0OStZWHJnOHpcblBXczFFMFZjOTVlaEZscDc2RExaTDdHZmp5d1h2MjJKc2dRSm1NeTI2NzZYdE9IYWxRV0l1ZmxOQWQ2VDljbGFcbi83RDRKb0dtaXBEK1ZHdGljUDlCaVUyRU5ZOHROY0o2MjN4Qnl2OUxRZkRVSGNNZEtJVko1TllyellicXdHcDdcblJ6NCtjNEU5VlRCMVVCaWl6T2NKc0djMFRybWJmYnhVTlhSOS9MMEcwRkh5QTVkTU0yNEo5RElaRXFQOXNZOG9cblhHcE9GTWVVS2greG54dzlkV2J4aVVzTFAxdmlJU3BJOWJGTjM4aHcrUXNqcVpYMmhSUXZDd0tPZWNIaDlCRUNcbkJaWWQreklOSFBQTG1YdmxMV0F4MXl0V2lwdndiL0lzZlErMlYwOVFWNnN2VytPN0tuUVNQeW9JMEhsNm42Ly9cbjJESEtiQlRGQWdNQkFBRUNnZ0VBRG9TS0ozaUEvaHBDSVBSREpUT2RyZW1ZZWlheDBGK1QrQTNpRVBqVEwrOW9cbmVqMG1aTnZJRk96QXJ4dVlWQVF2RG50ZTJlQW9LNG5lRVVZem03SFhYVjNpaFYxaGhwZzZtZ2NYMGdFWFdTZU5cbksxZHNFZWUxeFV5UWFNcjQvSHZUZlhuU1BrZkZoc3hvTWF5OUc3WnpMWjAzaUEwd0t3SHpiR09VU1k5Q2ZNK25cbjFwQWd6S1J5NW1aM3FEeEpzTDFYY2hrTlMvR21ONUM1NmtuOXBDaWVlbThML0xQdDV3amV5Mk5yNmlnT3MyemtcbmtLcld2ZHMzcTN1MDhvV3EyZHdKNEt3ZVZuOGxDSWROWnNseThvUkJXZmdxZEdhZXhpSXMvOTg3MEFHeEppTStcblRObU1pK2lGMmNpeXVydlgyeFRodWJrOXV1eXBWaXp0MUpVZnBkSlhUUUtCZ1FEb0pIQ1J1MWJnbTljdHpUVEVcbkV6NC83Uzh4UUUwampBVXgyTUx2ZWxOWEhMSUx6YU5jL0ZJUHRWcXRiNDlHRm5XTmpmd0N1emFDRGNicG85Qzdcbm5ya1VEbjZjYkNRalBUcFN1c1lPQmltMHFaSThGRTYwVXVFYVdwSVYwM2kvSGZseTRjVDdtZVRreVFBQUVqSTZcbm9nRGZrQnllNGNGcU1SeUxTMTlObnM4Qi93S0JnUURPMDVNUGJwQkpMSHN1bXNzeUNxR0FzdEoxQTJwb1Q5QzVcblo5T2Q4U21kSDd6SmtpTGdRbHhTaDJsd3hJT1ZjWFpzcVQ0SitpblVKMkM4dG5lK0tHcmZQVnoyaDJOUnB5NXFcbjlZRlpYYVl5OGJpZUp5cFNxUndmeWdsbTVhWkVZWnQyOWZMTU9uZ1VoaHFJRWhVWG5kZnd1WDZxb2g1d0ZYaWxcbmovQnRWUXRoT3dLQmdRRGFTZm00YjhzZjVpc1BISmx6and6SUhBWjJiNXFaeEg3V0FwZzdqSEYxeHJ2OXNWN2VcbmZ6M0RHNnVxenU2UTMybW10RTYzV3NmRXY2Tzk2NWJKOWxUZThVcEpXTDhhaSthZUNKZFlkSjhmRFIwL2RYRVVcbnk2SjBuNW9pLy9uWTdSeTExR3JnbERQU2x0ZHpPYWtWeldTNDFOQzA3bUJydE1hOGpTR080YmlTalFLQmdBeXlcbk1pblZXS2dWUWU2SGRBZTdYVlNnSllrblQ0WGR1R3RaTTBWVHc0RXdySThYR0dyNXg5OE5EdXpzTTBPZU5tM1BcbktjN0UrNEpaZEhmQkg3S2Rtb25mbzNCQ3VWY08weXVmckhRRzZxZmY3THhRblNsNzFnMGhndGc5S3FxeDd6QXJcblF0OUVpNUIrOXV2NWFEQU44VzZHaEg4RytxVll2QkkxdHNXUFhlWjNBb0dCQUoyQjlQakhqblljUW5mREpMd2RcbnVzVW5FRVpyQ1BLQ1hiNk1jMkUyQ1hORGZUZ2pXZi8xNDg0QTE2dFl1QW4wdVNLdzNEOEFzaUJTWm9qVkdnQXpcbjUxOERVUXBxYmNVeFpNWjFzS2tsWlMrTWxNRWJwMUM1NSs5UWsvMWtnamM4dzNYM2JETDZ5ZVFLVlBwbzFheXpcbjBUS0NOamdZSGp4d0FiTlRGMlZkWTFielxuLS0tLS1FTkQgUFJJVkFURSBLRVktLS0tLVxuIiwKICAiY2xpZW50X2VtYWlsIjogImpvYi1yZWNvbW1lbmRlci1zdG9yYWdlQGJhbmRlZC10b3RhbGl0eS0yNDc3MDEuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iLAogICJjbGllbnRfaWQiOiAiMTEwNjM1MTA2NzM3Mzc5ODcwMTQ3IiwKICAiYXV0aF91cmkiOiAiaHR0cHM6Ly9hY2NvdW50cy5nb29nbGUuY29tL28vb2F1dGgyL2F1dGgiLAogICJ0b2tlbl91cmkiOiAiaHR0cHM6Ly9vYXV0aDIuZ29vZ2xlYXBpcy5jb20vdG9rZW4iLAogICJhdXRoX3Byb3ZpZGVyX3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vb2F1dGgyL3YxL2NlcnRzIiwKICAiY2xpZW50X3g1MDlfY2VydF91cmwiOiAiaHR0cHM6Ly93d3cuZ29vZ2xlYXBpcy5jb20vcm9ib3QvdjEvbWV0YWRhdGEveDUwOS9qb2ItcmVjb21tZW5kZXItc3RvcmFnZSU0MGJhbmRlZC10b3RhbGl0eS0yNDc3MDEuaWFtLmdzZXJ2aWNlYWNjb3VudC5jb20iCn0K
+kind: Secret
+metadata:
+  labels:
+    app: django
+  name: gcp-credentials
+type: Opaque
+---
+apiVersion: v1
+data:
+  mysql-sshkey: LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFBQUFBQkc1dmJtVUFBQUFFYm05dVpRQUFBQUFBQUFBQkFBQUJGd0FBQUFkemMyZ3RjbgpOaEFBQUFBd0VBQVFBQUFRRUF2TldWMmtuQVNJUG94VWcvMnNUZFJkanJRbWdWOXNtbnpBWlNmaHVFVHlsUjhna2lJd2p1Cm9LTy9oWS9ockplc0lpOS8za291aGFzRHI2ZTRrRnF5bVRkYkd2d1k3YThTUHdrcXQ1WGZ5QmNPdFFuaFMwNjhrb3JPTTEKTTlEQndDSzY5ZFF6QnBBaGE1Yk5ybzZUVHNKRlQzQTRwaWZKR3Q4SG5SZjQrb2R5bWRGak5MZkZUQjBqakF6SjFaUmF4bwo5K3JMc3pvbDZQWDhic3FIb20vMU1jZTBoMi8xV3E5dVZEbmFRanE5SEFPclhVTmhDVWVzZTBjRXJZZmdNWjJRMk45VS9sClQwTWFVdlJhazBxcVFWbWVCWVVYeitaTk1FMFY3K0Z2MzNPd0YvcEplMW9BL24vY1QzcHNFTkRXa3gremdjaThGaWpLeGkKMWJnT2U4ZHMyUUFBQTloWEJocy9Wd1liUHdBQUFBZHpjMmd0Y25OaEFBQUJBUUM4MVpYYVNjQklnK2pGU0QvYXhOMUYyTwp0Q2FCWDJ5YWZNQmxKK0c0UlBLVkh5Q1NJakNPNmdvNytGaitHc2w2d2lMMy9lU2k2RnF3T3ZwN2lRV3JLWk4xc2EvQmp0CnJ4SS9DU3EzbGQvSUZ3NjFDZUZMVHJ5U2lzNHpVejBNSEFJcnIxMURNR2tDRnJsczJ1anBOT3drVlBjRGltSjhrYTN3ZWQKRi9qNmgzS1owV00wdDhWTUhTT01ETW5WbEZyR2ozNnN1ek9pWG85Znh1eW9laWIvVXh4N1NIYi9WYXIyNVVPZHBDT3IwYwpBNnRkUTJFSlI2eDdSd1N0aCtBeG5aRFkzMVQrVlBReHBTOUZxVFNxcEJXWjRGaFJmUDVrMHdUUlh2NFcvZmM3QVgra2w3CldnRCtmOXhQZW13UTBOYVRIN09CeUx3V0tNckdMVnVBNTd4MnpaQUFBQUF3RUFBUUFBQVFBMWg0NXRUTTdYUDUxeW4yS0sKajVmeVB1V2g4NE9XYTkvSE5GdWFLQTYvcWdUeXlhZ0ZxbmlLelNCenFpL2REem5handCK2NTVHkrMkdXSDhOd0dHWGNqUgpha2RhWlRhbmVQcXZlVEIwZGluemFxRjF6b1RpK2lrdnFWRGhtV0h6SjJVOFhxVUFUVWRNQ25uUDY5YlNVcnYzSXViTUl5CmNkR1BBOWxoZ2NYTjBWOXdqanNtNXYrWkZVc0dVbFdsa0pIUmNVTlY4NGxFbDJMMUpUcHBUVmV0TWh3WHRMZnlyRmJMMUsKdFY5bHZnQVVTc0RrbzYvOEU0NDczeXdac3VLK29OalI4WFVkaFFmcGt6WUVIK0ZDY3RURTE5Y3AvUktvOUUrUll0eVpTWQpZMVFNWC9SWktySStOQnYvZ1ZyWDZLczZoYklIVnluYU5DSGtJVEsrTmo2cEFBQUFnRGZ6cENXTm1VNk41SnFtcmtlL0wzCmg4U1EzSmNPaHNLOXQ0TlFsVGtXTVdsbUUzcHhBajMyT25TUnlkcUZMMWFvcmNjOHY0bXRZUlpPNWJBcS9qM2xOWit6d2gKcjdVWWZBV0NXbUp0alEySE9JZDFTdkNUTStBc2V5S2swZDEvQUFmamV4TmErSEU3azg1TGRYSko5Sk1uWVA4cy92SVNvaQpGM2lxQmZzbDlaQUFBQWdRRGN1VW1tdkQ1WUt6ZXlDczVCNUFpUWVYVXUxd1dtbUJweHdwWWY2T2M5VW8yTjIxWndpZVVuCndrcHozb1N0M1h2V0hjRlNWZXFVSmtmVXBaRndvak1uaGZwWjhFVGkvUEhQc1lGclJDb0NVekUzdy9jZEZNbHh2ZjFFdWcKVE1LT2FJNldldldjM290VU11Yy9IaTdCSk05ZTBSNDFyL01UN0c5M2VmYUZCdWh3QUFBSUVBMndPUndxb1F3WkRqbjJULwpXVEhnWC9MYkUzV2Qzak9OaHVyUk9ZY2FoWittZjBkTnNaU2Z0QjNjcThhTExlS291c3pmK2VjcytTQTFCdno0K04xV3V4Cm1qSWRwRC9vc2RXQUFPNk1JalB1SDlLaXl0YVJuZ3ViRm5JeTMxelB1c1IyYmlFNHJyNytTRUxrcTlZa2R1OERpUmp3b04KNTk4d3MzdW9DNlpKd1o4QUFBQWRhbTlvYmtCcWIyaHVkV2t0VFdGalFtOXZheTFRY204dWJHOWpZV3dCQWdNRUJRWT0KLS0tLS1FTkQgT1BFTlNTSCBQUklWQVRFIEtFWS0tLS0tCg==
+  mysql-sshkey.pub: c3NoLXJzYSBBQUFBQjNOemFDMXljMkVBQUFBREFRQUJBQUFCQVFDODFaWGFTY0JJZytqRlNEL2F4TjFGMk90Q2FCWDJ5YWZNQmxKK0c0UlBLVkh5Q1NJakNPNmdvNytGaitHc2w2d2lMMy9lU2k2RnF3T3ZwN2lRV3JLWk4xc2EvQmp0cnhJL0NTcTNsZC9JRnc2MUNlRkxUcnlTaXM0elV6ME1IQUlycjExRE1Ha0NGcmxzMnVqcE5Pd2tWUGNEaW1KOGthM3dlZEYvajZoM0taMFdNMHQ4Vk1IU09NRE1uVmxGckdqMzZzdXpPaVhvOWZ4dXlvZWliL1V4eDdTSGIvVmFyMjVVT2RwQ09yMGNBNnRkUTJFSlI2eDdSd1N0aCtBeG5aRFkzMVQrVlBReHBTOUZxVFNxcEJXWjRGaFJmUDVrMHdUUlh2NFcvZmM3QVgra2w3V2dEK2Y5eFBlbXdRME5hVEg3T0J5THdXS01yR0xWdUE1N3gyelogam9obkBqb2hudWktTWFjQm9vay1Qcm8ubG9jYWwK
+kind: Secret
+metadata:
+  labels:
+    app: django
+  name: mysql-sshkey
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: django
+  name: django
+spec:
+  ports:
+  - port: 80
+    targetPort: http
+  selector:
+    app: django
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: django
+  name: django
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: django
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: django
+    spec:
+      containers:
+      - command:
+        - bash
+        - -c
+        - /config/start.sh
+        envFrom:
+        - configMapRef:
+            name: deployment-params
+        - secretRef:
+            name: deployment-secrets
+        image: gcr.io/banded-totality-247701/job_recommender:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 6
+          httpGet:
+            path: /ht
+            port: 5000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: django
+        ports:
+        - containerPort: 5000
+          name: http
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ht
+            port: 5000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 3
+        resources:
+          limits:
+            cpu: 100m
+            memory: 128Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /secrets/gcp
+          name: gcp-credentials
+          readOnly: true
+      - command:
+        - /cloud_sql_proxy
+        - --dir=/cloudsql
+        - -instances=${GCP_PRJECT_ID}:${GCP_REGION}:${POSTGRES_DB}=tcp:${POSTGRES_PORT}
+        - -credential_file=/secrets/cloudsql/cloudsql-credentials.json
+        envFrom:
+        - secretRef:
+            name: deployment-secrets
+        image: gcr.io/cloudsql-docker/gce-proxy:1.16
+        name: cloudsql-proxy
+        volumeMounts:
+        - mountPath: /secrets/cloudsql
+          name: gcp-credentials
+          readOnly: true
+        - mountPath: /etc/ssl/certs
+          name: ssl-certs
+        - mountPath: /cloudsql
+          name: cloudsql
+      initContainers:
+      - command:
+        - bash
+        - -c
+        - /config/init.sh
+        envFrom:
+        - configMapRef:
+            name: deployment-params
+        - secretRef:
+            name: deployment-secrets
+        image: gcr.io/banded-totality-247701/job_recommender:latest
+        imagePullPolicy: Always
+        name: init-django
+        volumeMounts:
+        - mountPath: /config
+          name: config
+        - mountPath: /tmp/mysql-sshkey
+          name: mysql-sshkey
+      priorityClassName: very-high-priority
+      volumes:
+      - configMap:
+          defaultMode: 511
+          name: django-config
+        name: config
+      - name: mysql-sshkey
+        secret:
+          secretName: mysql-sshkey
+      - name: gcp-credentials
+        secret:
+          secretName: gcp-credentials
+      - hostPath:
+          path: /etc/ssl/certs
+        name: ssl-certs
+      - emptyDir: null
+        name: cloudsql
+---
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  labels:
+    app: django
+  name: django
+spec:
+  maxReplicas: 10
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: extensions/v1beta1
+    kind: Deployment
+    name: django
+  targetCPUUtilizationPercentage: 50

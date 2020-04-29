@@ -1,0 +1,11 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: acme-crt-$(ENVIRONMENT)
+spec:
+  secretName: acme-crt-secret-$(ENVIRONMENT)
+  issuerRef:
+    name: letsencrypt-$(ENVIRONMENT)
+  dnsNames:
+  - $(DOMAIN)
+  - www.$(DOMAIN)

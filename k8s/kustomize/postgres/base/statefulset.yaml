@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  serviceName: postgres
+  replicas: 3
+  template:
+    spec:
+      terminationGracePeriodSeconds: 10
+      volumes:
+        - name: config
+          configMap:
+            name: postgres-config
+        - name: shared
+          emptyDir: {}
+      containers:
+        - name: postgres
+          image: postgres:10.5
+          imagePullPolicy: IfNotPresent
+          args: ['-c', 'config_file=/etc/postgres.conf', '-c', 'hba_file=/etc/pg_hba.conf']
+          ports:
+            - name: postgres
+              containerPort: 5432
+              protocol: TCP
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          envFrom:
+          - configMapRef:
+              name: statefulset-params
+          - secretRef:
+              name: statefulset-secrets
+          env:
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: status.podIP
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - exec pg_isready --host $POD_IP
+            failureThreshold: 6
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 5
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - exec pg_isready --host $POD_IP
+            failureThreshold: 3
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          volumeMounts:
+            - name: postgres-pvc
+              mountPath: /var/lib/postgresql/data/pgdata
+              subPath: postgres-db
+            - name: config
+              mountPath: /etc/postgres.conf
+              subPath: postgres.conf
+            - name: config
+              mountPath: /etc/master.conf
+              subPath: master.conf
+            - name: config
+              mountPath: /etc/replica.conf
+              subPath: replica.conf
+            - name: config
+              mountPath: /etc/pg_hba.conf
+              subPath: pg_hba.conf
+            - name: config
+              mountPath: /docker-entrypoint-initdb.d/init.sh
+              subPath: init.sh
+            - name: shared
+              mountPath: /etc/cluster-config
+  volumeClaimTemplates:
+  - metadata:
+      name: postgres-pvc
+    spec:
+      storageClassName: "fast"
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 1Gi

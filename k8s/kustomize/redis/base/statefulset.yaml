@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: redis
+spec:
+  serviceName: redis
+  replicas: 2
+  template:
+    spec:
+      priorityClassName: high-priority
+      containers:
+      - command: [sh, -c, source /redis-config/init.sh ]
+        image: redis:6.0.1-alpine
+        imagePullPolicy: IfNotPresent
+        name: redis
+        ports:
+        - name: redis
+          containerPort: 6379
+        volumeMounts:
+          - name: config
+            mountPath: /redis-config
+          - name: data
+            mountPath: /redis-data
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 420
+          name: redis-config
+      - name: data
+        emptyDir: {}

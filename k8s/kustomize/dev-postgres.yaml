@@ -1,0 +1,206 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: fast
+parameters:
+  type: pd-ssd
+provisioner: k8s.io/minikube-hostpath
+---
+apiVersion: v1
+data:
+  init.sh: "#!/bin/bash\nset -e\nif [[ ${HOSTNAME} == 'postgres-0' ]]; then\n  cp
+    /etc/master.conf /etc/cluster-config/\n  psql -v ON_ERROR_STOP=1 --username \"$POSTGRES_USER\"
+    --dbname \"$POSTGRES_DB\" <<-EOSQL\n  \tCREATE ROLE replication WITH REPLICATION
+    PASSWORD '$REPLICATION_PASSWORD' LOGIN\n  EOSQL\nelse\n  cp /etc/replica.conf
+    /etc/cluster-config/\n  echo \"Running pg_basebackup to catch up replication server...\";\n
+    \ pg_basebackup -R -h postgres -D \"$PGDATA\" -P -U replication;\n  chown -R postgres:postgres
+    $PGDATA;\nfi\n"
+  master.conf: |-
+    wal_level = hot_standby
+    max_wal_senders = 5
+    wal_keep_segments = 32
+  pg_hba.conf: |
+    local   all             all                                     trust
+    host    all             all             127.0.0.1/32            trust
+    host    all             all             ::1/128                 trust
+    local   replication     all                                     trust
+    host    replication     all             127.0.0.1/32            trust
+    host    replication     all             ::1/128                 trust
+    host    replication     replication     all                     md5
+    host all all all md5
+  postgres.conf: |-
+    listen_addresses = '*'
+    max_connections = 100
+    shared_buffers = 128MB
+    dynamic_shared_memory_type = posix
+    log_timezone = 'UTC'
+    datestyle = 'iso, mdy'
+    timezone = 'UTC'
+    lc_messages = 'en_US.utf8'
+    lc_monetary = 'en_US.utf8'
+    lc_numeric = 'en_US.utf8'
+    lc_time = 'en_US.utf8'
+    default_text_search_config = 'pg_catalog.english'
+    include_dir = 'cluster-config'
+  replica.conf: hot_standby = on
+kind: ConfigMap
+metadata:
+  labels:
+    app: postgres
+  name: postgres-config
+---
+apiVersion: v1
+data:
+  PGDATA: /var/lib/postgresql/data/pgdata
+  PGUSER: postgres
+  POSTGRES_DB: postgres
+  POSTGRES_USER: postgres
+kind: ConfigMap
+metadata:
+  name: statefulset-params-t9f4h7675m
+---
+apiVersion: v1
+data:
+  POSTGRES_PASSWORD: cGFzc3dvcmQ=
+  REPLICATION_PASSWORD: cmVwbGljYVBhc3N3b3Jk
+kind: Secret
+metadata:
+  name: statefulset-secrets-7fbg4m7tc7
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres
+  name: postgres
+spec:
+  clusterIP: None
+  ports:
+  - name: postgres
+    port: 5432
+  selector:
+    app: postgres
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: postgres
+  name: postgres-read
+spec:
+  ports:
+  - name: postgres
+    port: 5432
+  selector:
+    app: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: postgres
+  name: postgres
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: postgres
+  serviceName: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - args:
+        - -c
+        - config_file=/etc/postgres.conf
+        - -c
+        - hba_file=/etc/pg_hba.conf
+        env:
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        envFrom:
+        - configMapRef:
+            name: statefulset-params-t9f4h7675m
+        - secretRef:
+            name: statefulset-secrets-7fbg4m7tc7
+        image: postgres:10.5
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - exec pg_isready --host $POD_IP
+          failureThreshold: 6
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: postgres
+        ports:
+        - containerPort: 5432
+          name: postgres
+          protocol: TCP
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - exec pg_isready --host $POD_IP
+          failureThreshold: 3
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          successThreshold: 1
+          timeoutSeconds: 3
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data/pgdata
+          name: postgres-pvc
+          subPath: postgres-db
+        - mountPath: /etc/postgres.conf
+          name: config
+          subPath: postgres.conf
+        - mountPath: /etc/master.conf
+          name: config
+          subPath: master.conf
+        - mountPath: /etc/replica.conf
+          name: config
+          subPath: replica.conf
+        - mountPath: /etc/pg_hba.conf
+          name: config
+          subPath: pg_hba.conf
+        - mountPath: /docker-entrypoint-initdb.d/init.sh
+          name: config
+          subPath: init.sh
+        - mountPath: /etc/cluster-config
+          name: shared
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - configMap:
+          name: postgres-config
+        name: config
+      - emptyDir: {}
+        name: shared
+  updateStrategy:
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - metadata:
+      labels:
+        app: postgres
+      name: postgres-pvc
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: fast

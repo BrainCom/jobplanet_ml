@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-flower
+  labels:
+    app: celery-flower
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: "25%"
+      maxUnavailable: "100%"
+  template:
+    spec:
+      containers:
+      - name: celery-flower
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        readinessProbe:
+          tcpSocket:
+            port: 5555
+          # exec:
+          #   command:
+          #     - bash
+          #     - -c
+          #     - celery inspect ping -A config.celery_app
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-worker
+  labels:
+    app: celery-worker
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: "25%"
+      maxUnavailable: "100%"
+  template:
+    spec:
+      containers:
+      - name: celery-worker
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery-beat
+  labels:
+    app: celery-beat
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: "25%"
+      maxUnavailable: "100%"
+  template:
+    spec:
+      containers:
+      - name: celery-beat
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi

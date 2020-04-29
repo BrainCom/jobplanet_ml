@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: Issuer
+metadata:
+  name: letsencrypt-$(ENVIRONMENT)
+spec:
+  acme:
+    server: $(ISSUER_SERVER)
+    email: $(ADMIN_EMAIL)
+    privateKeySecretRef:
+      name: letsencrypt-$(ENVIRONMENT)
+    solvers:
+    - selector: {}
+      dns01:
+        clouddns:
+          project: $(PROJECT_ID)
+          serviceAccountSecretRef:
+            name: gcp-ingress-credentials
+            key: dns01-solver-credentials.json

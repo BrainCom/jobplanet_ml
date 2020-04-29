@@ -1,0 +1,9 @@
+# Kubernetes 1.16.5-gke.1 이상이면 v1beta2 
+apiVersion: networking.gke.io/v1beta2
+# apiVersion: networking.gke.io/v1beta1
+kind: ManagedCertificate
+metadata:
+  name: job-recommender-cert
+spec:
+  domains:
+    - kubeflow.endpoints.banded-totality-247701.cloud.goog

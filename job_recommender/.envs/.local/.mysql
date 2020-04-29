@@ -1,0 +1,7 @@
+# mysql
+# ------------------------------------------------------------------------------
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_DB=jk_dev
+MYSQL_USER=root
+MYSQL_PASSWORD=root

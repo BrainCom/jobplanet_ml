@@ -1,0 +1,29 @@
+# Headless service for stable DNS entries of StatefulSet members.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app: postgres
+spec:
+  ports:
+  - name: postgres
+    port: 5432
+  clusterIP: None
+  selector:
+    app: postgres
+---
+# Client service for connecting to any postgres instance for reads.
+# For writes, you must instead connect to the master: postgres-0.postgres.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-read
+  labels:
+    app: postgres
+spec:
+  ports:
+  - name: postgres
+    port: 5432
+  selector:
+    app: postgres
