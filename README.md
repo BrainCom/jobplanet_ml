@@ -16,7 +16,7 @@ service(headless) | sentinel | Django의 broker세팅이 가리키는 곳 | X | 
 *참고 이미지
 kubectl get ingress | kubectl get service
 ---- | ----
-![image](https://user-images.githubusercontent.com/16386947/119599343-c72fe300-be1f-11eb-9730-a26be8eba99b.png) | ![image](https://user-images.githubusercontent.com/16386947/119599356-cc8d2d80-be1f-11eb-83dc-1df81c055e0c.png)
+![image](https://user-images.githubusercontent.com/16386947/119745062-5690d100-bec8-11eb-98d1-f9532b980c02.png) | ![image](https://user-images.githubusercontent.com/16386947/119745069-5a245800-bec8-11eb-90fd-5eb23244a4a3.png)
 
 
 ## POD
