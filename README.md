@@ -32,16 +32,22 @@ statefulset | Sentinel | redis sentinel<br/>cluster failover | 3 | | X<br/>(pod 
 - 그러나, kubernetes로 메뉴얼로 구성하지 않고, GCP cloudsql 기능 사용(관리 용이할 것으로 판단)
 - Django/Celery pod에서 cloudsql proxy를 통해 연결
 
+*참고 이미지
+kubectl get pod | kubectl get deployment | kubectl get statefulset
+---- | ---- | ---- 
+![image](https://user-images.githubusercontent.com/16386947/119745074-5ee90c00-bec8-11eb-8d13-620f504f552a.png) | ![image](https://user-images.githubusercontent.com/16386947/119745077-614b6600-bec8-11eb-984e-2126075529f3.png) | ![image](https://user-images.githubusercontent.com/16386947/119745081-63adc000-bec8-11eb-981f-f7e37eab298f.png)
+
 ## GCP 화면
 
 ### 작업부하: POD (Deployment/Statefulset)
-![image](https://user-images.githubusercontent.com/16386947/119599431-f47c9100-be1f-11eb-9946-f7f5fec1647c.png)
+![image](https://user-images.githubusercontent.com/16386947/119745092-67414700-bec8-11eb-8f77-d11a28ba4e1b.png)
 
 ### 서비스: Service/Ingress
-![image](https://user-images.githubusercontent.com/16386947/119599445-fb0b0880-be1f-11eb-9f23-8a61ff6b1499.png)
+![image](https://user-images.githubusercontent.com/16386947/119745094-69a3a100-bec8-11eb-90a6-5b2f425e549f.png)
 
 ### 구성: Config Map / Secret
-![image](https://user-images.githubusercontent.com/16386947/119599459-00685300-be20-11eb-8bb9-a73a222fe822.png)
+![image](https://user-images.githubusercontent.com/16386947/119745102-6c9e9180-bec8-11eb-8336-593eed10a20b.png)
+
 ```
 관리의 용이성을 고려해 크게 아래와 같이 3 타입으로 구성했음
 
@@ -53,11 +59,11 @@ statefulset | Sentinel | redis sentinel<br/>cluster failover | 3 | | X<br/>(pod 
 ```
 
 ### Cloudsql
-![image](https://user-images.githubusercontent.com/16386947/119599470-05c59d80-be20-11eb-88cd-475dd1b35cd0.png)
+![image](https://user-images.githubusercontent.com/16386947/119745110-6f00eb80-bec8-11eb-8c35-29209b6d3cce.png)
 
 ### [Monitoring](https://console.cloud.google.com/monitoring/dashboards/resourceList/kubernetes)
-![image](https://user-images.githubusercontent.com/16386947/119599482-0c541500-be20-11eb-84bd-ac896f3e7f5e.png)
-![image](https://user-images.githubusercontent.com/16386947/119599489-0e1dd880-be20-11eb-825f-6ddfdac91b24.png)
+![image](https://user-images.githubusercontent.com/16386947/119745115-71634580-bec8-11eb-883d-f6c96585dacd.png)
+![image](https://user-images.githubusercontent.com/16386947/119745118-745e3600-bec8-11eb-8682-43c2968c67c2.png)
 
 ## 코드 작성 / 관리
 *kustomize tool 사용시
@@ -84,6 +90,7 @@ kubectl apply -f priority_classes.yaml
 ```
 *코드 구조
 참고: 이미지의 postgres는 작성만 해두었고 실제로는 쓰지 않고 있음(대신 cloudsql  사용)
+![image](https://user-images.githubusercontent.com/16386947/119745126-77592680-bec8-11eb-8a41-796f835573cd.png)
 
 ## 배포관리는 어떻게 하나
 research 결과 2020년초 기준, k8s 배포에 주로 사용되는 방식은 Helm, Spinnaker 등이 있는데,
